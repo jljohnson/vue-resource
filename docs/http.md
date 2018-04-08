@@ -23,24 +23,24 @@ Shortcut methods are available for all request types. These methods work globall
 
 ```js
 // global Vue object
-Vue.http.get('/someUrl', [options]).then(successCallback, errorCallback);
-Vue.http.post('/someUrl', [body], [options]).then(successCallback, errorCallback);
+Vue.http.get('/someUrl', [config]).then(successCallback, errorCallback);
+Vue.http.post('/someUrl', [body], [config]).then(successCallback, errorCallback);
 
 // in a Vue instance
-this.$http.get('/someUrl', [options]).then(successCallback, errorCallback);
-this.$http.post('/someUrl', [body], [options]).then(successCallback, errorCallback);
+this.$http.get('/someUrl', [config]).then(successCallback, errorCallback);
+this.$http.post('/someUrl', [body], [config]).then(successCallback, errorCallback);
 ```
 List of shortcut methods:
 
-* `get(url, [options])`
-* `head(url, [options])`
-* `delete(url, [options])`
-* `jsonp(url, [options])`
-* `post(url, [body], [options])`
-* `put(url, [body], [options])`
-* `patch(url, [body], [options])`
+* `get(url, [config])`
+* `head(url, [config])`
+* `delete(url, [config])`
+* `jsonp(url, [config])`
+* `post(url, [body], [config])`
+* `put(url, [body], [config])`
+* `patch(url, [body], [config])`
 
-## Options
+## Config
 
 Parameter | Type | Description
 --------- | ---- | -----------
@@ -51,11 +51,12 @@ params | `Object` | Parameters object to be sent as URL parameters
 method | `string` | HTTP method (e.g. GET, POST, ...)
 responseType | `string` | Type of the response body (e.g. text, blob, json, ...)
 timeout | `number` | Request timeout in milliseconds (`0` means no timeout)
-before | `function(request)` | Callback function to modify the request options before it is sent
-progress | `function(event)` | Callback function to handle the [ProgressEvent](https://developer.mozilla.org/en-US/docs/Web/API/ProgressEvent) of uploads
 credentials | `boolean` | Indicates whether or not cross-site Access-Control requests should be made using credentials
 emulateHTTP | `boolean` | Send PUT, PATCH and DELETE requests with a HTTP POST and set the `X-HTTP-Method-Override` header
 emulateJSON | `boolean` | Send request body as `application/x-www-form-urlencoded` content type
+before | `function(request)` | Callback function to modify the request object before it is sent
+uploadProgress | `function(event)` | Callback function to handle the [ProgressEvent](https://developer.mozilla.org/en-US/docs/Web/API/ProgressEvent) of uploads
+downloadProgress | `function(event)` | Callback function to handle the [ProgressEvent](https://developer.mozilla.org/en-US/docs/Web/API/ProgressEvent) of downloads
 
 ## Response
 
@@ -134,7 +135,7 @@ Interceptors can be defined globally and are used for pre- and postprocessing of
 
 ### Request processing
 ```js
-Vue.http.interceptors.push(function(request, next) {
+Vue.http.interceptors.push(function(request) {
 
   // modify method
   request.method = 'POST';
@@ -143,39 +144,37 @@ Vue.http.interceptors.push(function(request, next) {
   request.headers.set('X-CSRF-TOKEN', 'TOKEN');
   request.headers.set('Authorization', 'Bearer TOKEN');
 
-  // continue to next interceptor
-  next();
 });
 ```
 
 ### Request and Response processing
 ```js
-Vue.http.interceptors.push(function(request, next) {
+Vue.http.interceptors.push(function(request) {
 
   // modify request
   request.method = 'POST';
 
-  // continue to next interceptor
-  next(function(response) {
+  // return response callback
+  return function(response) {
 
     // modify response
     response.body = '...';
 
-  });
+  };
 });
 ```
 
 ### Return a Response and stop processing
 ```js
-Vue.http.interceptors.push(function(request, next) {
+Vue.http.interceptors.push(function(request) {
 
   // modify request ...
 
   // stop and return response
-  next(request.respondWith(body, {
+  return request.respondWith(body, {
     status: 404,
     statusText: 'Not found'
-  }));
+  });
 });
 ```
 
@@ -184,9 +183,8 @@ Vue.http.interceptors.push(function(request, next) {
 All default interceptors callbacks can be overriden to change their behavior. All interceptors are exposed through the `Vue.http.interceptor` object with their names `before`, `method`, `jsonp`, `json`, `form`, `header` and `cors`.
 
 ```js
-Vue.http.interceptor.before = function(request, next) {
+Vue.http.interceptor.before = function(request) {
 
   // override before interceptor
 
-  next();
 };
